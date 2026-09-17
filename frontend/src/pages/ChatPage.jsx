@@ -6,6 +6,7 @@ import AIMessageCard from "../components/AIMessageCard";
 import ThreadSidebar from "../components/ThreadSidebar";
 import TokenBudgetPanel from "../components/TokenBudgetPanel";
 import tokenBugetIcon from "../assets/icons/token-budget.png"
+import sendButtonIcon from "../assets/icons/send-button.png"
 function ChatPage() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
@@ -111,7 +112,9 @@ function ChatPage() {
             placeholder="Ask about a topic"
             disabled={loading}
           />
-          <button className="rounded-full text-2xl bg-[#495057]" onClick={handleSend} disabled={loading}>⮙</button>
+          <button className="rounded-full text-2xl bg-[#495057]" onClick={handleSend} disabled={loading}>
+            <img src={sendButtonIcon} alt="send-button" className="w-4 h-4 object-contain"></img>
+          </button>
           <button
               className="rounded-full text-2xl bg-[#495057]"
               onClick={() => setShowTokenBudget((prev) => !prev)}>
