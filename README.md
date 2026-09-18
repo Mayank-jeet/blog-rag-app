@@ -1,4 +1,4 @@
-# RAG Blog App
+# Blog RAG App
 
 BlogGEN is an AI-powered blog generation application that takes a user's topic and automatically creates a complete, structured blog using a multi-step LangGraph workflow.
 
