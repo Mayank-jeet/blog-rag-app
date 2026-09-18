@@ -156,6 +156,68 @@ blog-rag-app/
 │
 ├── .gitignore
 └── README.md
+```
+
+## Workflow Overview
+
+BlogGEN uses a multi-step **LangGraph workflow** to transform a user's topic into a complete, structured blog with research and relevant AI-generated images.
+
+```text
+User
+ │
+ ▼
+React Frontend
+ │
+ ▼
+FastAPI Backend
+ │
+ ▼
+Thread Creation / Selection
+ │
+ ▼
+Planner
+ │
+ │  Creates tasks for the requested topic
+ ▼
+Token Budget
+ │
+ │  Allocates token budgets for each task
+ ▼
+Research Router
+ │
+ ├───────────────┐
+ │               │
+ ▼               ▼
+Research       Skip Research
+ │               │
+ │               │
+ └───────┬───────┘
+         ▼
+      Composer
+         │
+         │  Generates the complete blog
+         ▼
+    Image Planner
+         │
+         │  Identifies sections that need images
+         ▼
+     Image Generator
+         │
+         │  Generates the required images
+         ▼
+       Merge
+         │
+         │  Replaces image markers with
+         │  generated images
+         ▼
+    Final Blog
+         │
+         ▼
+   React Markdown
+         │
+         ▼
+        User
+```
 
 ## Deployment
 
@@ -192,6 +254,22 @@ Render
   ├── Anthropic Claude
   ├── Tavily
   └── Gemini
+```
+
+## Limitations
+
+- Thread data is currently stored in memory.
+- Restarting the backend can clear stored thread information.
+- API usage depends on the limits and billing of the configured AI providers.
+- Image generation depends on the availability and response format of the configured image-generation API.
+- The application requires valid API keys for the configured AI and research services.
+  
+## Future Improvements
+
+- Persistent database-backed thread storage
+- User authentication
+- Streaming blog generation
+- Improved UI/UX and customization options
 
 ## Author
 
