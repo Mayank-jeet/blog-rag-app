@@ -23,7 +23,8 @@ The application combines LLMs, research, dynamic token budgeting, AI-generated i
 - Fallback thread naming when LLM naming fails
 - Token budget panel for viewing research task budgets
 - Responsive UI for desktop and mobile
-- Loading animations while generating content
+- Animated landing screen with a rotating 3D-style Earth (canvas) that slides away once the chat starts
+- "Generating your blog" card with an orbit animation and a live elapsed-time timer while the blog is being created
 - Separate frontend and backend architecture
 
 ---
@@ -36,6 +37,7 @@ The application combines LLMs, research, dynamic token budgeting, AI-generated i
 - Vite
 - Tailwind CSS
 - React Markdown
+- d3-geo, topojson-client and world-atlas for the rotating Earth (drawn on an HTML canvas)
 - JavaScript / JSX
 
 ### Backend
@@ -118,8 +120,8 @@ blog-rag-app/
 │   ├── src/
 │   │   │
 │   │   ├── api/
-│   │   │   ├── blogApi.jsx
-│   │   │   └── threadsApi.jsx
+│   │   │   ├── blogApi.js
+│   │   │   └── threadsApi.js
 │   │   │
 │   │   ├── assets/
 │   │   │   └── icons/
@@ -130,6 +132,8 @@ blog-rag-app/
 │   │   ├── components/
 │   │   │   ├── AIMessageCard.jsx
 │   │   │   ├── UserMessageCard.jsx
+│   │   │   ├── GeneratingCard.jsx
+│   │   │   ├── GlobeCanvas.jsx
 │   │   │   ├── ThreadSidebar.jsx
 │   │   │   └── TokenBudgetPanel.jsx
 │   │   │
