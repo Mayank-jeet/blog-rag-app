@@ -5,8 +5,9 @@ import UserMessageCard from "../components/UserMessageCard";
 import AIMessageCard from "../components/AIMessageCard";
 import ThreadSidebar from "../components/ThreadSidebar";
 import TokenBudgetPanel from "../components/TokenBudgetPanel";
+import GlobeCanvas from "../components/GlobeCanvas";
+import GeneratingCard from "../components/GeneratingCard";
 import tokenBugetIcon from "../assets/icons/token-budget.png"
-import sendButtonIcon from "../assets/icons/send-button.png"
 function ChatPage() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
@@ -64,62 +65,110 @@ function ChatPage() {
         onSelectThread={handleSelectThread}
         onNewChat={handleNewChat}
         isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
 
       <main className="chat-area text-white flex flex-col h-screen">
+        <div
+          className={`globe-layer ${messages.length === 0 ? "" : "away"}`}
+          aria-hidden="true"
+        >
+          <GlobeCanvas active={messages.length === 0} />
+          <h2 className="globe-heading text-lg md:text-xl lg:text-2xl font-semibold text-gray-400">
+            What would you like to know about
+            <span className="wave-dot">.</span>
+            <span className="wave-dot">.</span>
+            <span className="wave-dot">.</span>
+          </h2>
+        </div>
         <div className="topbar flex items-center text-xl ">
-          <button className="sidebar-toggle" onClick={() => setSidebarOpen((prev) => !prev)}>
-            ☰
+          <button
+            className={`sidebar-toggle sidebar-open-btn ${sidebarOpen ? "is-hidden" : ""}`}
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open sidebar"
+            title="Open sidebar"
+            tabIndex={sidebarOpen ? -1 : 0}
+            aria-hidden={sidebarOpen}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="22"
+              height="22"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M4 8h16" />
+              <path className="icon-short-line" d="M4 16h16" />
+            </svg>
           </button>
           <p className="font-bold">BlogGEN</p>
         </div>
         <div className="messages flex-1 min-h-0 overflow-y-auto">
-          {messages.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-400">
-              <div className="max-w-[480px] w-full">
-                <h2 className="text-lg md:text-xl lg:text-2xl font-semibold">
-                  What would you like to know about
-                  <span className="wave-dot">.</span>
-                  <span className="wave-dot">.</span>
-                  <span className="wave-dot">.</span>
-                </h2>
-              </div>
-            </div>
-          ) : (
-            messages.map((msg, i) =>
-              msg.type === "human" ? (
-                <UserMessageCard key={i} content={msg.content} />
-              ) : (
-                <AIMessageCard key={i} content={msg.content} />
-              )
+          {messages.map((msg, i) =>
+            msg.type === "human" ? (
+              <UserMessageCard key={i} content={msg.content} />
+            ) : (
+              <AIMessageCard key={i} content={msg.content} />
             )
           )}
-          {loading && <p>Generating
-                <span className="wave-dot">.</span>
-                <span className="wave-dot">.</span>
-                <span className="wave-dot">.</span>
-                </p>}
+          {loading && <GeneratingCard />}
         </div>
         {showTokenBudget && (
           <TokenBudgetPanel taskBudgets={taskBudgets} />
         )}
-        <div className="input-bar">
-          <input
-            className="rounded-l-full rounded-r-full bg-[#495057] text-white px-4 py-2 w-full"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            placeholder="Ask about a topic"
-            disabled={loading}
-          />
-          <button className="rounded-full text-2xl bg-[#495057]" onClick={handleSend} disabled={loading}>
-            <img src={sendButtonIcon} alt="send-button" className="w-4 h-4 object-contain"></img>
-          </button>
-          <button
-              className="rounded-full text-2xl bg-[#495057]"
-              onClick={() => setShowTokenBudget((prev) => !prev)}>
-              <img src={tokenBugetIcon} alt="token-budget" className="w-4 h-4 object-contain"></img>
-            </button>
+        <div className={`input-bar ${messages.length > 0 ? "compact" : ""}`}>
+          <div className="chat-input">
+            <textarea
+              className="chat-input-field"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              placeholder="Ask about a topic"
+              disabled={loading}
+              rows={2}
+            />
+            <div className="chat-input-footer">
+              <button
+                type="button"
+                className="chat-input-icon-btn"
+                onClick={() => setShowTokenBudget((prev) => !prev)}
+              >
+                <img src={tokenBugetIcon} alt="token-budget" className="w-4 h-4 object-contain" />
+              </button>
+              <button
+                type="button"
+                className="chat-input-send-btn"
+                onClick={handleSend}
+                disabled={loading}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-label="send-button"
+                >
+                  <path d="m22 2-7 20-4-9-9-4Z" />
+                  <path d="M22 2 11 13" />
+                </svg>
+                <span>Send</span>
+              </button>
+            </div>
+          </div>
         </div>
       </main>
     </div>

@@ -6,20 +6,25 @@
   outline: none;  
 }
 
+:root {
+  --app-bg: #060606; /* one shared background for sidebar, chat area and globe fade */
+}
+
 .app-container {
   display: flex;
   height: 100vh;
   overflow: hidden;
+  background: var(--app-bg);
 }
 
 .sidebar {
-  background-color: #040404;
+  background-color: var(--app-bg);
   width: 260px;
   flex-shrink: 0;
   height: 100%;
   overflow: hidden;
-  border-right: 1px solid #ddd;
-  transition: width 0.2s ease, border-color 0.2s ease;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s ease;
 }
 
 .sidebar.closed {
@@ -29,39 +34,298 @@
 
 .sidebar-content {
   width: 260px;
-  padding: 16px;
+  padding: 14px 12px 16px;
   height: 100%;
   overflow-y: auto;
 }
 
+/* small screens: the sidebar slides over the chat instead of squeezing it */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 50;
+    width: min(280px, 85vw);
+    box-shadow: 12px 0 32px rgba(0, 0, 0, 0.55);
+    transition:
+      transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.3s ease,
+      border-color 0.3s ease;
+  }
+
+  .sidebar.closed {
+    width: min(280px, 85vw);
+    transform: translateX(-100%);
+    box-shadow: none;
+  }
+
+  .sidebar-content {
+    width: 100%;
+  }
+}
+
 .sidebar-content .new-chat-button{
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   flex-direction:row;
   align-items: center;
   gap: 8px;  
-  width: 100px;
-  height: 30px;
-  padding: 4px;
-  border-radius: 8px;
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+.sidebar-content .new-chat-button:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+}
+.sidebar-content .new-chat-button:active {
+  transform: scale(0.98);
 }
 .topbar {
   flex-shrink: 0;
-  padding: 12px 16px;
+  height: 64px;
+  padding: 0 16px;
+  gap: 6px;
 }
 
 .sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
   background: none;
-  border: none;
-  font-size: 1.4rem;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  font-size: 1.35rem;
+  color: #a1a1aa;
   cursor: pointer;
-  padding: 4px 8px;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+.sidebar-toggle:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.10);
+  color: #fff;
+}
+.sidebar-toggle:active {
+  transform: scale(0.94);
+}
+
+/* Sidebar header row: "New chat" + close button */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+/* slimmer buttons inside the sidebar (the topbar open button keeps its size) */
+.sidebar-header .sidebar-toggle {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+/* ---------- Thread list: rail + sliding diamond marker ---------- */
+/* registered so the marker position (and the bright part of the rail) can animate together */
+@property --marker-y {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+
+.thread-list {
+  --row-h: 36px;
+  --row-gap: 4px;
+  --marker-y: calc(var(--active-index, 0) * (var(--row-h) + var(--row-gap)) + var(--row-h) / 2);
+  position: relative;
+  padding-left: 22px;
+  transition: --marker-y 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* the rail: bright above the marker, dim below it */
+.thread-list::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.75) var(--marker-y),
+    rgba(255, 255, 255, 0.12) var(--marker-y)
+  );
+}
+
+.thread-list:not(.has-active)::before {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* the diamond marker, slides to the active thread */
+.thread-list::after {
+  content: "";
+  position: absolute;
+  left: 4.5px;
+  top: calc(var(--marker-y) - 4px);
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  border-radius: 1px;
+  transform: rotate(45deg);
+  box-shadow: 0 0 0 3px var(--app-bg); /* cuts a small gap in the rail around the marker */
+  transition: opacity 0.25s ease;
+}
+
+.thread-list:not(.has-active)::after {
+  opacity: 0;
+}
+
+.thread-item {
+  display: flex;
+  align-items: center;
+  height: var(--row-h);
+  margin-bottom: var(--row-gap);
+  padding: 0 12px;
+  border-radius: 10px;
+  color: #a1a1aa;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.thread-item:hover {
+  color: #e4e4e7;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.thread-item.active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* one line only; long names fade out at the end */
+.thread-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+}
+
+/* "Open" button in the top bar: only visible while the sidebar is closed.
+   When the sidebar opens it shrinks and fades out, so BlogGEN slides smoothly into place. */
+.sidebar-open-btn {
+  overflow: hidden;
+  transition:
+    width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    margin 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease;
+}
+.sidebar-open-btn.is-hidden {
+  width: 0;
+  margin-right: -6px; /* cancels the topbar gap while the button is hidden */
+  border-width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Open icon: two lines; the short one grows to full length on hover */
+.icon-short-line {
+  transform-box: fill-box;
+  transform-origin: left center;
+  transform: scaleX(0.6);
+  transition: transform 0.25s ease;
+}
+.sidebar-open-btn:hover .icon-short-line {
+  transform: scaleX(1);
+}
+
+/* Close icon: double chevron that nudges left on hover */
+.icon-close-chevrons {
+  transition: transform 0.25s ease;
+}
+.sidebar-close-btn:hover .icon-close-chevrons {
+  transform: translateX(-2px);
 }
 .chat-area {
+  position: relative;
+  overflow: hidden; /* clips the globe layer while it slides down off-screen */
   flex: 1;
   display: flex;
   flex-direction: column;
   height: 100%;
+  background: var(--app-bg);
+}
+
+/* keep the real UI (topbar, messages, input) above the globe layer */
+.chat-area > :not(.globe-layer) {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- Globe (empty-chat state) ---------- */
+.globe-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  transition:
+    transform 0.9s cubic-bezier(0.7, 0, 0.3, 1),
+    opacity 0.7s ease 0.15s;
+}
+
+/* fades the lower part of the globe into the black background */
+.globe-layer::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 45%;
+  background: linear-gradient(to bottom, rgba(6, 6, 6, 0), var(--app-bg) 92%);
+}
+
+/* once the thread has a message, the globe slides down and disappears */
+.globe-layer.away {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+.globe-wrap {
+  position: absolute;
+  inset: 0;
+  /* dissolve the globe towards the left/right edges so it never hits the sidebar seam */
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 16%, #000 84%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, #000 16%, #000 84%, transparent 100%);
+}
+
+.globe-canvas {
+  display: block;
+}
+
+.globe-heading {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 24%;
+  z-index: 1;
+  margin: 0 auto;
+  max-width: 480px;
+  padding: 0 16px;
+  text-align: center;
 }
 
 .messages {
@@ -71,6 +335,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  transition: padding-bottom 0.45s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .message {
@@ -81,31 +346,318 @@
 
 .user-message {
   align-self: flex-end;
-  background: #0077b6;
+  background: #e5e5e5;
+  color: #171717;
 }
 
 .ai-message {
   align-self: flex-start;
-  background: #000000;
+  max-width: 90%;
+  background: var(--app-bg);
+  color: #f5f5f5;
+}
+
+/* images inside AI messages: never overflow, scale with the message */
+.ai-message img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 12px 0;
+  border-radius: 12px;
+}
+
+/* spacing for markdown content (Tailwind's reset removes the browser defaults) */
+.ai-message p {
+  margin: 0 0 1em;
+  line-height: 1.7;
+}
+
+.ai-message h1,
+.ai-message h2,
+.ai-message h3,
+.ai-message h4 {
+  margin: 1.4em 0 0.5em;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.ai-message h1 { font-size: 1.6em; }
+.ai-message h2 { font-size: 1.35em; }
+.ai-message h3 { font-size: 1.15em; }
+
+.ai-message ul,
+.ai-message ol {
+  margin: 0 0 1em;
+  padding-left: 1.5em;
+}
+.ai-message ul { list-style: disc; }
+.ai-message ol { list-style: decimal; }
+.ai-message li { margin: 0.3em 0; }
+
+.ai-message > :first-child { margin-top: 0; }
+.ai-message > :last-child { margin-bottom: 0; }
+
+/* small screens: AI message uses the full width (padding comes from .messages) */
+@media (max-width: 768px) {
+  .messages {
+    padding: 16px 14px;
+  }
+
+  .ai-message {
+    align-self: stretch;
+    max-width: 100%;
+    width: 100%;
+    padding: 8px 2px;
+    overflow-wrap: anywhere;
+  }
+
+  .ai-message img {
+    width: 100%;
+  }
 }
 
 .input-bar {
+  --morph-time: 0.45s;
+  --morph-ease: cubic-bezier(0.4, 0, 0.2, 1);
   justify-content: center;
   flex-shrink: 0;
   display: flex;
-  gap: 8px;
   padding: 16px;
+  transition: padding var(--morph-time) var(--morph-ease);
 }
 
-.input-bar input {
-  flex: 1;
-  padding: 12px;
+@media (prefers-reduced-motion: reduce) {
+  .input-bar {
+    --morph-time: 0.01s;
+  }
+}
+
+.chat-input {
+  position: relative;
+  width: 100%;
   max-width: 1000px;
+  display: flex;
+  flex-direction: column;
+  background: rgba(12, 12, 14, 0.72);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  overflow: hidden;
+  transition:
+    border-color 0.2s ease,
+    border-radius var(--morph-time) var(--morph-ease),
+    box-shadow var(--morph-time) var(--morph-ease);
 }
 
-.input-bar button {
-  padding: 12px 20px;
+/* divider above the button row (full-size input only) */
+.chat-input::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 69px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+  transition: opacity var(--morph-time) var(--morph-ease);
+}
+
+.chat-input:focus-within {
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.chat-input-field {
+  display: block;
+  width: 100%;
+  padding: 20px 24px 69px; /* bottom padding reserves room for the button row */
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1.5;
+  resize: none;
+  height: 149px; /* fallback for browsers without field-sizing */
+  min-height: 149px;
+  max-height: 270px;
+  transition:
+    height var(--morph-time) var(--morph-ease),
+    min-height var(--morph-time) var(--morph-ease),
+    max-height var(--morph-time) var(--morph-ease),
+    padding var(--morph-time) var(--morph-ease);
+}
+
+/* browsers that support it: the box grows with the text */
+@supports (field-sizing: content) {
+  .chat-input-field {
+    field-sizing: content;
+    height: auto;
+  }
+}
+
+.chat-input-field::placeholder {
+  color: #6b6b76;
+}
+
+.chat-input-field:disabled {
+  opacity: 0.6;
+}
+
+/* the buttons are positioned by .chat-input so they can glide between the two layouts */
+.chat-input-footer {
+  display: contents;
+}
+
+.chat-input-icon-btn,
+.chat-input-send-btn {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  color: #a1a1aa;
+  border-radius: 10px;
   cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    left var(--morph-time) var(--morph-ease),
+    right var(--morph-time) var(--morph-ease),
+    bottom var(--morph-time) var(--morph-ease),
+    width var(--morph-time) var(--morph-ease),
+    height var(--morph-time) var(--morph-ease),
+    padding var(--morph-time) var(--morph-ease),
+    gap var(--morph-time) var(--morph-ease),
+    border-radius var(--morph-time) var(--morph-ease);
+}
+
+.chat-input-icon-btn {
+  left: 16px;
+  bottom: 14px;
+  width: 40px;
+  height: 40px;
+}
+
+.chat-input-send-btn {
+  right: 16px;
+  bottom: 12px;
+  gap: 8px;
+  width: 104px;
+  height: 44px;
+  padding: 0 20px;
+  font-weight: 600;
+}
+
+.chat-input-send-btn svg {
+  flex-shrink: 0;
+  transition:
+    width var(--morph-time) var(--morph-ease),
+    height var(--morph-time) var(--morph-ease),
+    transform var(--morph-time) var(--morph-ease);
+}
+
+/* the "Send" label collapses smoothly in the compact layout */
+.chat-input-send-btn span {
+  display: inline-block;
+  max-width: 60px;
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    max-width var(--morph-time) var(--morph-ease),
+    opacity var(--morph-time) var(--morph-ease);
+}
+
+.chat-input-icon-btn:hover,
+.chat-input-send-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.chat-input-send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- Compact input: used once the thread has messages, to leave more room for content ---------- */
+.input-bar.compact {
+  padding: 8px 16px 12px;
+}
+
+/* thread has messages: the input floats over the content, so the messages stay visible
+   on the left/right of it and (blurred) through it, like the globe in the empty state */
+.chat-area > .input-bar.compact {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none; /* the sides let scrolling and clicks reach the messages */
+}
+
+.input-bar.compact .chat-input {
+  pointer-events: auto;
+  border-radius: 28px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+}
+
+/* leave room so the last message can scroll up above the floating input */
+.chat-area:has(.input-bar.compact) .messages {
+  padding-bottom: 112px;
+}
+
+/* the token budget panel (when open) sits above the floating input */
+.chat-area:has(.input-bar.compact) .token-budget-panel {
+  margin-bottom: 76px;
+}
+
+.input-bar.compact .chat-input::after {
+  opacity: 0;
+}
+
+.input-bar.compact .chat-input-field {
+  padding: 15px 104px 15px 22px; /* right padding leaves room for the two buttons */
+  height: 54px;
+  min-height: 54px;
+  max-height: 160px;
+}
+
+@supports (field-sizing: content) {
+  .input-bar.compact .chat-input-field {
+    height: auto;
+  }
+}
+
+/* token button + send button sit side by side on the right, send as a round light button */
+.input-bar.compact .chat-input-icon-btn {
+  left: calc(100% - 96px);
+  bottom: 7px;
+  border-radius: 999px;
+}
+
+.input-bar.compact .chat-input-send-btn {
+  right: 8px;
+  bottom: 7px;
+  gap: 0;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 999px;
+  background: #e5e5e5;
+  color: #171717;
+}
+
+.input-bar.compact .chat-input-send-btn span {
+  max-width: 0;
+  opacity: 0;
+}
+
+/* bigger icon, nudged down-left because the plane's visual weight sits up-right */
+.input-bar.compact .chat-input-send-btn svg {
+  width: 20px;
+  height: 20px;
+  transform: translate(-1px, 1px);
+}
+
+.input-bar.compact .chat-input-send-btn:hover:not(:disabled) {
+  background: #fff;
+  color: #000;
 }
 .token-budget-panel {
   padding: 12px 16px;
@@ -169,4 +721,67 @@
 
 .wave-dot:nth-child(3) {
   animation-delay: 0.3s;
+}
+
+/* ---------- "Generating your blog" status card ---------- */
+.generating-card {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: min(520px, 100%);
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+}
+
+/* orbit ring: faint circle with one bright arc spinning around it */
+.orbit-ring {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-top-color: #e5e5e5;
+  animation: orbit-spin 1s linear infinite;
+}
+
+@keyframes orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.generating-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.generating-title {
+  font-weight: 600;
+  color: #f5f5f5;
+}
+
+.generating-sub {
+  margin-top: 2px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: #8b8b95;
+}
+
+.generating-timer {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #a1a1aa;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums; /* digits keep equal width so the timer doesn't jiggle */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orbit-ring {
+    animation-duration: 3s;
+  }
 }
