@@ -1,9 +1,4 @@
 import { useEffect, useState } from "react";
-
-// Purely visual component shown while a blog is being generated.
-// It is mounted only while `loading` is true (see ChatPage), so the timer
-// starts at 0 every time a new generation begins and stops when it ends.
-// It never touches chat state, API calls or any app logic.
 function GeneratingCard() {
   const [seconds, setSeconds] = useState(0);
 
