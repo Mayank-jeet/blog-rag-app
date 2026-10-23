@@ -29,7 +29,7 @@ function ChatPage() {
     try {
       const data = await sendMessage(currentInput, threadId);
       setThreadId(data.thread_id);
-      setMessages(data.messages);
+      setMessages((prev) => [...prev, ...data.messages]); // backend now returns only the new reply (last_only)
       setTaskBudgets(data.task_budgets);
     } catch (error) {
       console.error("Failed to send message:", error);
