@@ -15,6 +15,7 @@ based on the topic below. Return ONLY the title text — no quotes, no punctuati
 class BlogRequest(BaseModel):
     topic: str
     thread_id: str | None = None
+    last_only: bool = False  # True -> respond with only the newest message instead of the whole thread
 
 
 @router.post("/generate-blog")
@@ -38,8 +39,13 @@ async def generate_blog(req: BlogRequest):
     config = {"configurable": {"thread_id": thread_id}}
     result = graph.invoke({"messages": [HumanMessage(content=req.topic)]}, config=config)
 
+    # graph.invoke returns the whole accumulated thread (add_messages reducer + checkpointer);
+    # when last_only is set, send back just the newest message (the AI reply)
+    all_messages = result["messages"]
+    returned_messages = all_messages[-1:] if req.last_only else all_messages
+
     return {
         "thread_id": thread_id,
-        "messages": [{"type": m.type, "content": m.content} for m in result["messages"]],
+        "messages": [{"type": m.type, "content": m.content} for m in returned_messages],
         "task_budgets": result["task_budgets"],
     }
